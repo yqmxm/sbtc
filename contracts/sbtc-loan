@@ -7,7 +7,9 @@
   )
 )
 
-(impl-trait .sbtc-token-trait)
+;; 🚫 Hiro Web端不支持 (impl-trait .sbtc-token-trait)
+;; 直接注释掉或删除，后续用 contract-call? 时注意目标合约名字
+;; (impl-trait .sbtc-token-trait)
 
 (define-constant collateral-ratio-threshold u150) ;; 150% 抵押率
 (define-constant btc-loan-rate u66) ;; 可借 66% 抵押品价值
@@ -33,7 +35,6 @@
     )
     (begin
       (map-set user-loans {user: tx-sender} {amount: loan-amount})
-      ;; ⚠️ 这里在实际系统里应该触发一个 BTC 网络的 off-chain transfer
       (ok loan-amount)
     )
   )
@@ -79,11 +80,10 @@
     (
       (collateral (default-to u0 (get amount (map-get? user-collaterals {user: user}))))
       (loan (default-to u0 (get amount (map-get? user-loans {user: user}))))
-      (collateral-ratio (/ (* collateral u100) loan))
+      (collateral-ratio (if (> loan u0) (/ (* collateral u100) loan) u0))
     )
     (if (< collateral-ratio collateral-ratio-threshold)
       (begin
-        ;; 扣押抵押品
         (map-delete user-collaterals {user: user})
         (map-delete user-loans {user: user})
         (ok collateral)
